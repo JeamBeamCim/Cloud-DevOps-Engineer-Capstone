@@ -34,8 +34,8 @@ jobs:
             name: Build Docker Image
             command: |
               export TAG=v${CIRCLE_BUILD_NUM}
-              export IMAGE_NAME=capstone
-              docker build -t kelanik8/$IMAGE_NAME:$TAG .
+              export IMAGE_NAME=capstone-project
+              docker build -t gokhantrnd/$IMAGE_NAME:$TAG .
 
     push-docker-image:
       docker:
@@ -48,11 +48,11 @@ jobs:
             name: Push Docker Image to Docker Hub
             command: |
               export TAG=v${CIRCLE_BUILD_NUM}
-              export IMAGE_NAME=capstone
+              export IMAGE_NAME=capstone-project
 
-              docker build -t kelanik8/$IMAGE_NAME:$TAG .
+              docker build -t gokhantrnd/$IMAGE_NAME:$TAG .
               docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD 
-              docker push kelanik8/$IMAGE_NAME:$TAG
+              docker push gokhantrnd/$IMAGE_NAME:$TAG
 
     deploy-application:
       executor: aws-eks/python3

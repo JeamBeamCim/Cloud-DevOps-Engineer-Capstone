@@ -14,4 +14,3 @@ Environment variables for CircleCI deployment
 | `AWS_DEFAULT_REGION`     | Used by the AWS CLI. Project value: "us-east-1" |
 
 Upload local created docker image via `upload_docker.sh`
-test
