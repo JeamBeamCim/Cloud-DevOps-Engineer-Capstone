@@ -26,10 +26,6 @@ jobs:
             docker build -t gokhantrnd/$IMAGE_NAME .
             docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD 
             docker push gokhantrnd/$IMAGE_NAME
-  
-  
-  
-  
   deploy:
     docker:
       - image: circleci/python:3.7
