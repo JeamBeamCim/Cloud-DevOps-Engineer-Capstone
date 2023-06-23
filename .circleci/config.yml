@@ -17,6 +17,8 @@ jobs:
               curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
               sudo mv /tmp/eksctl /usr/local/bin
               eksctl version
+              sudo wget -O /bin/hadolint https://github.com/hadolint/hadolint/releases/download/v1.16.3/hadolint-Linux-x86_64
+              sudo chmod +x /bin/hadolint
         - run:
             name: Run Lint
             command: |
