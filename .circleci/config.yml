@@ -41,6 +41,7 @@ jobs:
               export IMAGE_NAME=capstone-project
               docker build --tag=$DOCKER_USERNAME/$IMAGE_NAME .
               docker image ls
+              docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD 
               docker push $DOCKER_USERNAME/$IMAGE_NAME
 
     deploy-application:
