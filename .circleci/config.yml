@@ -48,7 +48,7 @@ jobs:
               export IMAGE_NAME=capstone-project
               echo "Docker ID and Image: $IMAGE_NAME"
               docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
-              docker tag $IMAGE_NAME $DOCKER_USERNAME/$IMAGE_NAME:$CIRCLE_WORKFLOW_ID
+              #docker tag $IMAGE_NAME $DOCKER_USERNAME/$IMAGE_NAME:$CIRCLE_WORKFLOW_ID
               docker push $DOCKER_USERNAME/$IMAGE_NAME:$CIRCLE_WORKFLOW_ID
 
     push-docker-image:
