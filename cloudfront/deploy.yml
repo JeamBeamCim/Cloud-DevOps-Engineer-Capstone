@@ -29,7 +29,7 @@ Resources:
       SecurityGroups:
         - Ref: InstanceSecurityGroup
       KeyName: capstone-deploy
-      ImageId: ami-07dd19a7900a1f049
+      ImageId: ami-022e1a32d3f742bd8
       Tags:
         - Key: Name
           Value: !Sub capstone-${ID}
