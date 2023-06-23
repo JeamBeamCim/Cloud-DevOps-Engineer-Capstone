@@ -36,37 +36,12 @@ jobs:
             version: 19.03.13
 
         - run:
-            name: Build docker container
+            name: Build docker container & Upload to Dockerhub
             command: |
               export IMAGE_NAME=capstone-project
               docker build --tag=$DOCKER_USERNAME/$IMAGE_NAME .
               docker image ls
-
-        - run:
-            name: Upload Docker to Dockerhub
-            command: |
-              export IMAGE_NAME=capstone-project
-              echo "Docker ID and Image: $IMAGE_NAME"
-              docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
-              docker tag $IMAGE_NAME $DOCKER_USERNAME/$IMAGE_NAME:$CIRCLE_WORKFLOW_ID
-              docker push $DOCKER_USERNAME/$IMAGE_NAME:$CIRCLE_WORKFLOW_ID
-
-    push-docker-image:
-      docker:
-        - image: circleci/python:3.7
-      steps:
-        - checkout
-        - setup_remote_docker:
-            version: 19.03.13
-        - run:
-            name: Push Docker Image to Docker Hub
-            command: |
-              export TAG=v${CIRCLE_BUILD_NUM}
-              export IMAGE_NAME=capstone-project
-
-              docker build --tag $IMAGE_NAME:$TAG .
-              docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD 
-              docker push gokhantrnd/$IMAGE_NAME:$TAG
+              docker push $DOCKER_USERNAME/$IMAGE_NAME
 
     deploy-application:
       executor: aws-eks/python3
