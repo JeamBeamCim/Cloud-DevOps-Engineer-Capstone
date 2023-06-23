@@ -8,16 +8,16 @@ orbs:
 jobs:
     run-lint:
       docker:
-        - image: circleci/node:13.8.0
+        - image: python:3.7.3-stretch
       steps:
         - checkout
         - run:
             name: install dependencies
             command: |
-              sudo wget -O /bin/hadolint https://github.com/hadolint/hadolint/releases/download/v1.16.3/hadolint-Linux-x86_64
-              sudo chmod +x /bin/hadolint
-              sudo apt-get install python3-pip
-              sudo pip-3.3 install pylint
+              wget -O /bin/hadolint https://github.com/hadolint/hadolint/releases/download/v1.16.3/hadolint-Linux-x86_64
+              chmod +x /bin/hadolint
+              apt-get install python3-pip
+              pip-3.3 install pylint
         - run:
             name: Run Lint
             command: |
@@ -26,7 +26,7 @@ jobs:
 
     build-docker-image:
       docker:
-        - image: circleci/node:13.8.0
+        - image: python:3.7.3-stretch
       steps:
         - checkout
 
@@ -42,7 +42,7 @@ jobs:
 
     push-docker-image:
       docker:
-        - image: circleci/node:13.8.0
+        - image: python:3.7.3-stretch
       steps:
         - checkout
         - setup_remote_docker:
