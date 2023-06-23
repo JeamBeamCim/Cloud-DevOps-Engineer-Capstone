@@ -38,7 +38,8 @@ jobs:
         - run:
             name: Build docker container
             command: |
-              docker build --tag=$DOCKER_IMAGE_NAME .
+              export IMAGE_NAME=capstone-project
+              docker build --tag=$IMAGE_NAME .
               docker image ls
 
         - run:
