@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  aws-eks: circleci/aws-eks@0.2.6
+  aws-eks: circleci/aws-eks@0.2.7
   aws-ecr: circleci/aws-ecr@3.1.0
   kubernetes: circleci/kubernetes@0.4.0
 
@@ -34,7 +34,7 @@ jobs:
             name: Build Docker Image
             command: |
               export TAG=v${CIRCLE_BUILD_NUM}
-              export IMAGE_NAME=capstone
+              export IMAGE_NAME=capstone-project
               docker build -t gokhantrnd/$IMAGE_NAME:$TAG .
 
     push-docker-image:
@@ -48,7 +48,7 @@ jobs:
             name: Push Docker Image to Docker Hub
             command: |
               export TAG=v${CIRCLE_BUILD_NUM}
-              export IMAGE_NAME=capstone
+              export IMAGE_NAME=capstone-project
 
               docker build -t gokhantrnd/$IMAGE_NAME:$TAG .
               docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD 
