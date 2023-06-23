@@ -14,8 +14,9 @@ jobs:
         - run:
             name: install dependencies
             command: |
-              sudo wget -O /bin/hadolint https://github.com/hadolint/hadolint/releases/download/v1.16.3/hadolint-Linux-x86_64
-              sudo chmod +x /bin/hadolint
+              curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
+              sudo mv /tmp/eksctl /usr/local/bin
+              eksctl version
         - run:
             name: Run Lint
             command: |
@@ -78,7 +79,7 @@ jobs:
         - checkout
         - aws-eks/update-kubeconfig-with-authenticator:
             cluster-name: << parameters.cluster-name >>
-            install-kubectl: false
+            install-kubectl: true
             aws-region: << parameters.aws-region >>
         - kubernetes/create-or-update-resource:
             resource-file-path: "deployments/deployment.yml"
