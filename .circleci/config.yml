@@ -40,7 +40,7 @@ jobs:
             command: |
               export TAG=v${CIRCLE_BUILD_NUM}
               export IMAGE_NAME=eks_orb_capstone_project
-              docker build --tag $IMAGE_NAME:$TAG .
+              docker build --tag $IMAGE_NAME .
 
     push-docker-image:
       docker:
