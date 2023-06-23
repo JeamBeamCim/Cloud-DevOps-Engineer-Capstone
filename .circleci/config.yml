@@ -1,13 +1,16 @@
 version: 2.1
 
+orbs:
+  aws-eks: circleci/aws-eks@0.2.3
+  aws-ecr: circleci/aws-ecr@3.1.0
+  kubernetes: circleci/kubernetes@0.4.0
+
 jobs:
-  build-and-push-docker-image:
+  run-lint:
     docker:
       - image: python:3.7.3-stretch
     steps:
       - checkout
-      - setup_remote_docker:
-          version: 19.03.13
       - run:
           name: install dependencies
           command: |
@@ -17,58 +20,153 @@ jobs:
       - run:
           name: run lint
           command: |
-            . venv/bin/activate
-            make lint
-      - run:
-          name: Push Docker Image to Docker Hub
-          command: |
-            export IMAGE_NAME=capstone-project
-            docker build -t gokhantrnd/$IMAGE_NAME .
-            docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD 
-            docker push gokhantrnd/$IMAGE_NAME
-  deploy:
+            . venv/bin/activate 
+            make lint 
+
+  build-docker-image:
     docker:
       - image: circleci/python:3.7
     steps:
       - checkout
+
+      - setup_remote_docker:
+          version: 19.03.13
+
       - run:
-          name: Install awscli and gettext-base
+          name: Build docker container & Upload to Dockerhub
           command: |
-            sudo pip3 install awscli
-            sudo apt-get install gettext-base
+            export IMAGE_NAME=capstone-project
+            docker build --tag=$DOCKER_USERNAME/$IMAGE_NAME .
+            docker image ls
+            docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD 
+            docker push $DOCKER_USERNAME/$IMAGE_NAME
+
+  deploy-application:
+    executor: aws-eks/python3
+    parameters:
+      cluster-name:
+        description: |
+          Name of the EKS cluster
+        type: string
+      docker-image-name:
+        description: |
+          Name of the docker image to be deployed
+        type: string
+      version-info:
+        description: |
+          App version information
+        type: string
+      aws-region:
+        description: |
+          AWS region
+        type: string
+        default: "us-east-1"
+    steps:
+      - checkout
+      - aws-eks/update-kubeconfig-with-authenticator:
+          cluster-name: << parameters.cluster-name >>
+          install-kubectl: true
+          aws-region: << parameters.aws-region >>
+      - kubernetes/create-or-update-resource:
+          resource-file-path: "deployments/deployment.yml"
+          get-rollout-status: true
+          resource-name: deployment/capstone
+      - kubernetes/create-or-update-resource:
+          resource-file-path: "deployments/deployment.yml"
+
+  test-application:
+    executor: aws-eks/python3
+    parameters:
+      cluster-name:
+        description: |
+          Name of the EKS cluster
+        type: string
+      aws-region:
+        description: |
+          AWS region
+        type: string
+        default: ""
+      expected-version-info:
+        description: |
+          Expected app version (this is used for testing that the
+          correct version has been deployed)
+        type: string
+    steps:
+      - aws-eks/update-kubeconfig-with-authenticator:
+          cluster-name: << parameters.cluster-name >>
+          install-kubectl: true
+          aws-region: << parameters.aws-region >>
       - run:
-          name: Install aws-iam-authenticator
+          name: Wait for service to be ready
           command: |
-            curl -o aws-iam-authenticator curl -o aws-iam-authenticator https://amazon-eks.s3-us-west-2.amazonaws.com/1.13.7/2019-06-11/bin/linux/amd64/aws-iam-authenticator
-            sudo chmod +x ./aws-iam-authenticator
-            sudo mv ./aws-iam-authenticator /usr/local/bin/aws-iam-authenticator
+            kubectl get pods
+            kubectl get services
+
+  undeploy-application:
+    executor: aws-eks/python3
+    parameters:
+      cluster-name:
+        description: |
+          Name of the EKS cluster
+        type: string
+      aws-region:
+        description: |
+          AWS region
+        type: string
+        default: ""
+    steps:
+      - aws-eks/update-kubeconfig-with-authenticator:
+          cluster-name: << parameters.cluster-name >>
+          install-kubectl: true
+          aws-region: << parameters.aws-region >>
+      - kubernetes/delete-resource:
+          resource-types: "deployment,service"
+          label-selector: "app=capstone"
+          wait: true
       - run:
-          name: Install kubectl
+          name: Check on pod status
           command: |
-            curl -o kubectl https://amazon-eks.s3-us-west-2.amazonaws.com/1.13.7/2019-06-11/bin/linux/amd64/kubectl
-            sudo chmod +x ./kubectl
-            sudo mv ./kubectl /usr/local/bin/kubectl
-      - run:
-          name: Connect to cluster
-          command: |
-            aws eks --region $AWS_DEFAULT_REGION update-kubeconfig --name $CLUSTER_NAME
-      - run:
-          name: Prepare K8S template
-          command: |
-            ls 
-            rm -rf .k8s/.generated && mkdir -p kube/.k8s/.generated
-            for f in  kube/.k8s/template/deployment.yml
-              do
-              envsubst < $f > "kube/.k8s/.generated/$(basename $f)"
-            done
-      - run:
-          name: Deploy
-          command: |
-            kubectl apply -f kube/.k8s/.generated/
-            kubectl get pod
+            kubectl get pods
+
 workflows:
   default:
     jobs:
-      - build-and-push-docker-image
-      - deploy:
-          requires: [build-and-push-docker-image]
+      - run-lint
+      - build-docker-image
+      - aws-ecr/build_and_push_image:
+          name: build-and-push-image-ecr
+          account-url: AWS_ECR_URL
+          region: AWS_DEFAULT_REGION
+          repo: capstone-project
+          dockerfile: ~/project/Dockerfile
+          path: ~/project/
+          tag: ${CIRCLE_SHA1}
+      - aws-eks/create-cluster:
+          cluster-name: capstone-project-deployment-${CIRCLE_WORKFLOW_ID:0:7}
+          aws-region: $AWS_DEFAULT_REGION
+          requires:
+            - build-and-push-image-ecr
+      - deploy-application:
+          cluster-name: capstone-project-deployment-${CIRCLE_WORKFLOW_ID:0:7}
+          aws-region: $AWS_DEFAULT_REGION
+          docker-image-name: "${AWS_ECR_URL}/capstone-project:${CIRCLE_SHA1}"
+          version-info: "${CIRCLE_SHA1}"
+          requires:
+            - aws-eks/create-cluster
+      - test-application:
+          cluster-name: capstone-project-deployment-${CIRCLE_WORKFLOW_ID:0:7}
+          aws-region: $AWS_DEFAULT_REGION
+          expected-version-info: "${CIRCLE_SHA1}"
+          requires:
+            - deploy-application
+      - undeploy-application:
+          cluster-name: capstone-project-deployment-${CIRCLE_WORKFLOW_ID:0:7}
+          aws-region: $AWS_DEFAULT_REGION
+          requires:
+            - test-application
+      - aws-eks/delete-cluster:
+          cluster-name: capstone-project-deployment-${CIRCLE_WORKFLOW_ID:0:7}
+          aws-region: $AWS_DEFAULT_REGION
+          wait: true
+          requires:
+            - undeploy-application
