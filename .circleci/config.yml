@@ -160,13 +160,6 @@ workflows:
           dockerfile: ~/project/Dockerfile
           path: ~/project/
           tag: ${CIRCLE_SHA1}
-          steps:
-             - run:
-                 name: install dependencies
-                 command: |
-                   curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
-                   sudo mv /tmp/eksctl /usr/local/bin
-                   eksctl version
       - aws-eks/create-cluster:
           cluster-name: eks-orb-capstone-project-deployment-${CIRCLE_WORKFLOW_ID:0:7}
           aws-region: $AWS_DEFAULT_REGION
